@@ -52,10 +52,8 @@ const handleCommand = async (command) => {
     }).then(async () => {
       await LogoutAPI()
       ElMessage.success("退出登录成功")
-      // 清除本地存储中的token信息
-      localStorage.removeItem("token")
-      // 清除admin store中的userInfo信息
-      localStorage.removeItem("userInfo")
+      // 清除登录信息
+      AdminStore.clearLoginInfo()
       router.push("/auth/login")
     })
   }

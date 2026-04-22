@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router"
 import BackStageLayout from "@/components/BackStageLayout.vue"
 import AuthLayout from "@/components/AuthLayout.vue"
+import { useAdminStore } from "@/stores/admin"
 // 后台路由
 const BackRoutes = [
   {
@@ -74,12 +75,14 @@ const router = createRouter({
   routes: BackRoutes,
 })
 
+
 // 全局路由守卫
 router.beforeEach((to, from, next) => {
   // 检查用户是否已登录
-  const token = localStorage.getItem("token")
+  const adminStore = useAdminStore()
+  const token = adminStore.token
   if (token) {
-    const userInfo = localStorage.getItem("userInfo")
+    const userInfo = adminStore.userInfo
     if (userInfo.userType == 2) {//如果是后台路由
       if (to.path.startsWith("/back")) {
         next()
@@ -91,7 +94,7 @@ router.beforeEach((to, from, next) => {
     }
    
   } else {
-    // 如果用户已登录,判断是否是后台路由
+    // 如果用户未登录,判断是否是后台路由
     if (to.path.startsWith("/back")) {
       //如果是后台路由，重定向到登录页
       next('/auth/login')
@@ -103,3 +106,4 @@ router.beforeEach((to, from, next) => {
 
 // 导出路由实例
 export default router
+

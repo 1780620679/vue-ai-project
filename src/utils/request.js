@@ -1,3 +1,4 @@
+import { useAdminStore } from "@/stores/admin"
 import axios from "axios"
 import { ElMessage } from "element-plus"
 
@@ -12,7 +13,8 @@ request.interceptors.request.use(
   function (config) {
     // 在发送请求之前做些什么
     // 例如：添加token到请求头
-    const token = localStorage.getItem('token')
+    const adminStore = useAdminStore()
+    const token = adminStore.token
     if (token) {
       config.headers['token'] = token
     }
@@ -40,9 +42,9 @@ request.interceptors.response.use(
       if (data.code === '-1') {
         // 处理401错误，例如跳转到登录页
         ElMessage.error(data.msg || "登录过期，请重新登录")
-        // 清除token
-        localStorage.removeItem('token')
-        localStorage.removeItem('userInfo')
+        // 清除token,userInfo
+        const adminStore = useAdminStore()
+        adminStore.clearUser()
         window.location.href = "/auth/login"
         return Promise.reject(data)
       } else {
