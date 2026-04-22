@@ -13,9 +13,11 @@
   },
 
 3.弹窗组件ArticleDialog进行显示隐藏通过父组件v-model:modelValue,子组件通过computed计算属性中get，set方法来emit回调关闭
-  弹窗中各个表单的属性，及其具体实现， multiple filterable allow-create clearable等（还有upload上传里好多没印象）
+  弹窗里表格中各个表单的属性，及其具体实现， multiple filterable allow-create clearable等（还有upload上传里好多没印象）
   各个表单咋实现，数据怎么来的props传过来/单独定义一个死数据
   重点上传图片逻辑 是一个文件，有单独的后端接口处理，其中要使用new FormData()，和对应的append方法创建file对象，在设置唯一标识时用到UUID，图片展示出来用到拼接==后端提供服务器地址+文件处理接口返回的filePath
+  el-table里进行编辑，发布，删除时的id，可以通过对应的默认插槽 <template #default="scope">给的scpoe.row.id获取到
+    el-table至少有一列不设置宽度，这样可以实现自适应
 
 4.富文本 通过wangEditor插件来实现，封装成RichTextEditor组件调用，注意created（创建时的逻辑）和change（内容改变逻辑）方法
   这里有地方需注意，就是在编辑时回显数据，无论赋值传过来的数据给原先的formData（这里还顺便回显图片）还是，把formData数据设置到界面上（这里主要回显文本）
