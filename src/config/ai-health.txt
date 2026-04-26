@@ -59,6 +59,10 @@
 
 12 , 格式化日期   导包 import dayjs from 'element-plus'
 
+13，获取路由参数id  要配置path: "knowledge/article/:id",(可以直接使用route.params.id/也可以defineProps来接收 =>(前提是在配置路由时已经配置 props:true 才可以)) 
+    const props = defineProps({id:String})
+
+14.再注意一下基本的HTML清理和格式化方法这一块
   
 
                  

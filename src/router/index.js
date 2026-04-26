@@ -93,6 +93,10 @@ const FrontRoutes = [
         path: "knowledge",
         component: () => import("@/views/frontstage/knowledge.vue"),
       },
+      {
+        path: "knowledge/article/:id",
+        component: () => import("@/views/frontstage/knowledgeArticleDetail.vue"),
+      }
     ],
   },
 ]
