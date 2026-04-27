@@ -2,7 +2,7 @@
   <el-aside :width="isCollapse ? '64px' : '264px'">
     <el-menu :collapse="isCollapse" :collapse-transition="false" default-active="2" class="menu-style">
       <div class="brand">
-        <el-image :src="iconUrl" alt="logo" style="width: 50px; height: 50px; margin-right: 10px">
+        <el-image :src="iconUrl" alt="logo" style="width: 50px; height: 50px; margin-right: 10px; border-radius: 50%">
         </el-image>
         <div class="info-card" v-show="!isCollapse">
           <h1 class="brand-title">心理健康AI助手</h1>

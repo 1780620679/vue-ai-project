@@ -6,7 +6,7 @@
       </template>
     </PageHead>
     <TableSearch :formItem="formItem" @search="handleSearch"></TableSearch>
-    <el-table :data="tableData" style="width: 100%; margin-top: 25px">
+    <el-table :data="tableData" style="width: 100%; margin-top: 25px" v-loading="loading">
       <el-table-column label="文章标题" width="450" fixed="left">
         <template #default="scope">{{ scope.row.title }}</template>
       </el-table-column>
@@ -47,6 +47,8 @@ import { ElMessage, ElMessageBox } from "element-plus"
 import ArticleDialog from "@/components/ArticleDialog.vue"
 import TableSearch from "@/components/TableSearch.vue"
 import PageHead from "./components/PageHead.vue"
+// 引入加载状态
+const loading = ref(false)
 // 引入弹窗状态
 const dialogVisible = ref(false)
 // 搜索表单配置
@@ -97,6 +99,7 @@ const handleCurrentChange = (page) => {
 }
 // 搜索方法(子传父回调来的数据)
 const handleSearch = async (formData) => {
+  loading.value = true
   // 合并分页配置和搜索表单数据
   const params = {
     ...pagination,
@@ -105,6 +108,7 @@ const handleSearch = async (formData) => {
   const { records, total } = await getKnowledgeArticlePageAPI(params)
   tableData.value = records
   pagination.total = total
+  loading.value = false
 }
 // 表格数据
 const tableData = ref([])

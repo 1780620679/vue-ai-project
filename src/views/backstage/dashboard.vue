@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-container">
+  <div class="dashboard-container" v-loading="loading">
     <!-- 栅格布局  -->
     <!-- 四个卡片 gutter表示之间间距为20px -->
     <el-row :gutter="20">
@@ -124,11 +124,11 @@ import { onMounted, ref } from "vue"
 
 // echarts----------------------------------------------------------------------------------
 import * as echarts from "echarts"
-//                                    用于接收DOM
+// 图表实例(情绪趋势/咨询会话/用户活跃度)    用于接收实例
 let emotionChart = null
 let consultationChart = null
 let userActiveChart = null
-// 图表实例(情绪趋势/咨询会话/用户活跃度)   用于接收实例
+//用于接收DOM
 const emotionChartRef = ref(null)
 const consultationChartRef = ref(null)
 const userActiveChartRef = ref(null)
@@ -542,12 +542,17 @@ const iconUrl2 = new URL("@/assets/images/like.png", import.meta.url).href
 const iconUrl3 = new URL("@/assets/images/comments.png", import.meta.url).href
 const iconUrl4 = new URL("@/assets/images/smile.png", import.meta.url).href
 
+
+//loading状态
+const loading = ref(false)
 //界面数据
 const overviewData = ref({})
 onMounted(async () => {
+  loading.value = true
   const res = await getOverviewAPI()
   overviewData.value = res
   initChart()
+  loading.value = false
 })
 </script>
 <style lang="scss" scoped>

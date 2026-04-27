@@ -2,16 +2,12 @@
   <div class="consultation-container">
     <!-- 左侧静态结构 -->
     <div class="sidebar">
-      <!-- AI助手信息 -->
-      <div class="ai-assistant-info">
-        <div class="breathing-circle">
-          <el-image :src="logoUrl" alt="AI助手" style="width: 60px; height: 60px; border-radius: 50%;" />
+      <!-- 情绪趋势图表 -->
+      <div class="emotion-chart-container">
+        <div class="chart-header">
+          <h3 class="chart-title">情绪趋势</h3>
         </div>
-        <h3 class="assistant-name">心屿</h3>
-        <div class="online-status">
-          <div class="status-dot"></div>
-          在线服务中
-        </div>
+        <div ref="chartRef" class="emotion-chart"></div>
       </div>
       <!-- 情绪花园 -->
       <div class="emotion-garden">
@@ -117,7 +113,7 @@
       <div class="chat-header">
         <div class="header-left">
           <div class="chat-avatar">
-            <el-image :src="likeUrl" alt="AI助手" style="width: 30px; height: 30px;" />
+            <el-image :src="likeUrl" alt="AI助手" style="width: 32px; height: 32px; border-radius: 50%;" />
           </div>
           <div class="chat-info">
             <h2>心屿</h2>
@@ -153,7 +149,8 @@
           :class="msg.senderType === 1 ? 'user-message' : 'ai-message'">
           <div class="message-avatar">
             <el-image v-if="msg.senderType === 1" :src="userUrl" alt="用户" style="width: 18px; height: 18px;" />
-            <el-image v-if="msg.senderType === 2" :src="logoUrl" alt="AI助手" style="width: 18px; height: 18px;" />
+            <el-image v-if="msg.senderType === 2" :src="logoUrl" alt="AI助手"
+              style="width: 32px; height: 32px; border-radius: 50%;" />
           </div>
           <div class="message-content">
             <div class="message-bubble">
@@ -201,12 +198,13 @@
   </div>
 </template>
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, onUnmounted } from 'vue';
 import { deleteSessionAPI, getSessionDetailAPI, getSessionListAPI, getSessionEmotionAPI, startSessionAPI, } from '@/apis/frontend/consultation'
 import { ElMessage } from 'element-plus';
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { useAdminStore } from '@/stores/admin';
+import * as echarts from 'echarts';
 
 // 图标
 const logoUrl = new URL('@/assets/images/心屿.png', import.meta.url).href
@@ -220,6 +218,12 @@ const messages = ref([])
 const userMessage = ref('')
 // 是否助手正在回复(用于禁用输入框)
 const isAiTyping = ref(false)
+
+// 情绪趋势图表
+const chartRef = ref(null)
+let chart = null
+// 情绪分数历史记录
+const emotionHistory = ref([])
 
 //情绪花园
 const currentEmotion = ref({
@@ -264,10 +268,109 @@ const getEmotionAnalysis = async (sessionId) => {
   // console.log(res, '情绪分析结果');
   //更新情绪花园数据
   currentEmotion.value = res
-  // 加载完成后，隐藏骨架屏
-  skeletonLoading.value = false
+
+  // 将情绪数据添加到历史记录
+  const now = new Date()
+  const emotionData = {
+    time: `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`,
+    score: res.emotionScore,
+    emotion: res.primaryEmotion
+  }
+
+  // 添加到历史记录
+  emotionHistory.value.push(emotionData)
+
+  // 限制历史记录数量，只保留最近10条
+  if (emotionHistory.value.length > 10) {
+    emotionHistory.value = emotionHistory.value.slice(-10)
+  }
+
+  // 更新图表
+  updateChart()
 }
 
+
+// 初始化图表
+const initChart = () => {
+  if (chartRef.value) {
+    // 销毁旧图表实例
+    if (chart) {
+      chart.dispose()
+    }
+
+    // 创建新图表实例
+    chart = echarts.init(chartRef.value)
+
+    // 更新图表
+    updateChart()
+  }
+}
+
+// 更新图表
+const updateChart = () => {
+  if (!chart) return
+
+  // 准备图表数据
+  const times = emotionHistory.value.map(item => item.time)
+  const scores = emotionHistory.value.map(item => item.score)
+
+  // 配置图表选项
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      formatter: function (params) {
+        const data = params[0]
+        const index = data.dataIndex
+        const emotion = emotionHistory.value[index].emotion
+        return `${data.name}<br/>情绪: ${emotion}<br/>指数: ${data.value}`
+      }
+    },
+    xAxis: {
+      type: 'category',
+      data: times,
+      axisLabel: {
+        rotate: 45,
+        fontSize: 10,
+        interval: 0,
+        margin: 15
+      },
+      axisTick: {
+        interval: 0
+      }
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      name: '情绪指数'
+    },
+    series: [
+      {
+        data: scores,
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: {
+          width: 2,
+          color: '#FF9A56'
+        },
+        itemStyle: {
+          color: '#FF6B6B'
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(255, 154, 86, 0.3)' },
+            { offset: 1, color: 'rgba(255, 154, 86, 0.1)' }
+          ])
+        }
+      }
+    ]
+  }
+
+  // 应用配置
+  chart.setOption(option)
+}
 
 // 会话历史列表
 const sessionList = ref([])
@@ -503,6 +606,16 @@ onMounted(() => {
   createNewConversation()
   //获取会话历史列表
   getSessionList()
+  // 初始化图表
+  initChart()
+})
+
+onUnmounted(() => {
+  // 销毁图表实例
+  if (chart) {
+    chart.dispose()
+    chart = null
+  }
 })
 
 </script>
@@ -517,7 +630,7 @@ onMounted(() => {
   .sidebar {
     width: 320px;
 
-    .ai-assistant-info {
+    .emotion-chart-container {
       margin-bottom: 20px;
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 252, 248, 0.95) 100%);
       border-radius: 16px;
@@ -527,48 +640,24 @@ onMounted(() => {
       backdrop-filter: blur(10px);
       transition: all 0.3s ease;
 
-      .breathing-circle {
-        width: 60px;
-        height: 60px;
-        background: linear-gradient(135deg, #FF9A56 0%, #FF6B6B 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 12px;
-        animation: breathing 4s ease-in-out infinite;
-        box-shadow: 0 6px 24px rgba(255, 154, 86, 0.25);
-        position: relative;
-      }
+      .chart-header {
+        margin-bottom: 16px;
 
-      .assistant-name {
-        font-size: 16px;
-        font-weight: 700;
-        background: linear-gradient(135deg, #FF9A56 0%, #FF6B6B 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        background-clip: text;
-        margin: 0 0 12px;
-      }
-
-      .online-status {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #059669;
-        font-size: 12px;
-        font-weight: 600;
-
-        .status-dot {
-          width: 8px;
-          height: 8px;
-          background: #059669;
-          border-radius: 50%;
-          margin-right: 8px;
-          animation: pulse 2s infinite;
-          box-shadow: 0 0 8px rgba(5, 150, 105, 0.4);
+        .chart-title {
+          font-size: 16px;
+          font-weight: 700;
+          background: linear-gradient(135deg, #FF9A56 0%, #FF6B6B 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          text-align: center;
+          background-clip: text;
+          margin: 0;
         }
+      }
+
+      .emotion-chart {
+        width: 100%;
+        height: 250px;
       }
     }
 

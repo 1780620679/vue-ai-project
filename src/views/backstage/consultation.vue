@@ -2,7 +2,7 @@
   <div>
     <PageHead title="咨询记录"></PageHead>
     <!-- 咨询记录表格 -->
-    <el-table :data="tableData" style="width: 100%;">
+    <el-table :data="tableData" style="width: 100%;" v-loading="loading">
       <el-table-column label="会话ID" width="100">
         <template #default="scope">
           <el-avatar>{{ scope.row.userNickname }}</el-avatar>
@@ -27,7 +27,7 @@
     <el-pagination background :page-size="pagination.size" layout="prev, pager, next" :total="pagination.total"
       @change="handleCurrentChange" />
     <!-- 对话详情弹窗 -->
-    <el-dialog title="会话详情" v-model="showDetailDialog" width="70%">
+    <el-dialog title="会话详情" v-model="showDetailDialog" width="70%" v-loading="loading">
       <div class="session-detail">
         <div class="detail-header">
           <div class="detail-row">
@@ -72,8 +72,6 @@
 import { getConsultationDataAPI, getSessionMessagesAPI } from '@/apis/consultation';
 import { onMounted, ref } from 'vue';
 import PageHead from './components/PageHead.vue';
-import Skeleton from '@/components/Skeleton.vue';
-// 添加加载状态
 
 // 表格数据
 const tableData = ref([])
@@ -115,7 +113,9 @@ const handleCurrentChange = (page) => {
 
 
 onMounted(() => {
+  loading.value = true
   handleSearch()
+  loading.value = false
 })
 </script>
 <style scoped lang="scss">
