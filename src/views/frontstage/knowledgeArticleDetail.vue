@@ -18,7 +18,7 @@
           <el-tag class="category-tag" type="primary" plain size="large">{{ articleDetail.categoryName }}</el-tag>
           <div class="article-date">
             <el-icon><List /></el-icon>
-            {{ dayjs(articleDetail.updateAt).format('YYYY-MM-DD') }}
+            {{ dayjs(articleDetail.updatedAt).format('YYYY-MM-DD') }}
           </div>
         </div>
         <h1 class="article-title">{{ articleDetail.title }}</h1>
@@ -57,25 +57,41 @@
     </div>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
 import { dayjs } from 'element-plus'
 import { onMounted, ref } from 'vue'
-import { getKnowledgeArticleDetailAPI } from '@/apis/frontend/konwledge'
+import { getKnowledgeArticleDetailAPI } from '@/apis/frontend/knowledge'
 import { useRoute } from 'vue-router'
+import type { KnowledgeArticleDetailResponse } from '@/types/frontstage/knowledge'
 
 const bookUrl = new URL('@/assets/images/book.png', import.meta.url).href
 
 //获取路由参数id(可以直接使用route.params.id/也可以defineProps来接收)
 const route = useRoute()
 // 文章详情
-const articleDetail = ref({})
+const articleDetail = ref<KnowledgeArticleDetailResponse>({
+  id: '',
+  title: '',
+  summary: '',
+  content: '',
+  categoryId: '',
+  categoryName: '',
+  coverImage: '',
+  tags: [],
+  readCount: 0,
+  authorName: '',
+  publishAt: '',
+  createdAt: '',
+  updatedAt: '',
+  tagArray: []
+})
 // 获取文章详情
-const getArticleDetail = async () => {
-  const res = await getKnowledgeArticleDetailAPI(route.params.id)
+const getArticleDetail = async (): Promise<void> => {
+  const res = await getKnowledgeArticleDetailAPI(route.params.id as string)
   articleDetail.value = res
 }
 // 基本的HTML清理和格式化方法
-const formatContent = (content) => {
+const formatContent = (content: string | undefined): string => {
   if (!content) return ''
 
   // 基本的HTML清理和格式化

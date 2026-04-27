@@ -6,13 +6,15 @@
     </div>
   </div>
 </template>
-<script setup>
-const props = defineProps({
-  title: {
-    type: String,
-    default: "页面标题",
-  },
-});
+<script setup lang="ts">
+const props = defineProps<{
+  title: string;
+}>();
+
+// 定义插槽类型
+// defineSlots<{
+//   buttons: () => void;
+// }>();
 </script>
 <style lang="scss" scoped>
 .page-head {
@@ -20,6 +22,7 @@ const props = defineProps({
   display: flex;
   justify-content: space-between;
   align-items: center;
+
   .page-title {
     font-size: 24px;
     color: #2d3748;

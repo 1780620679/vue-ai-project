@@ -103,15 +103,23 @@
     </div>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { dayjs, ElMessage } from 'element-plus'
 import { createOrUpdateEmotionDiaryAPI } from '@/apis/frontend/emotionDiary'
+import type { CreateOrUpdateEmotionDiaryParams } from '@/types/frontstage/emotionDiary'
 const heartUrl = new URL('@/assets/images/like.png', import.meta.url).href
 // 情绪状态
-const emotionStatus = ['绝望崩溃', '消沉抑郁', '焦虑烦躁', '低落不悦', '平静淡然', '轻松惬意', '愉悦舒心', '欢欣满足', '兴奋欣喜', '极致幸福']
+const emotionStatus: string[] = ['绝望崩溃', '消沉抑郁', '焦虑烦躁', '低落不悦', '平静淡然', '轻松惬意', '愉悦舒心', '欢欣满足', '兴奋欣喜', '极致幸福']
+
+// 情绪选项类型
+interface EmotionOption {
+  name: string;
+  url: string;
+}
+
 //情绪选项,从@/assets/images/里读取
-const emotionOptions = [
+const emotionOptions: EmotionOption[] = [
   { name: '开心', url: new URL('@/assets/images/开心.png', import.meta.url).href },
   { name: '悲伤', url: new URL('@/assets/images/悲伤.png', import.meta.url).href },
   { name: '焦虑', url: new URL('@/assets/images/焦虑.png', import.meta.url).href },
@@ -121,25 +129,39 @@ const emotionOptions = [
   { name: '困惑', url: new URL('@/assets/images/困惑.png', import.meta.url).href },
   { name: '疲惫', url: new URL('@/assets/images/疲惫.png', import.meta.url).href },
 ]
+
+// 情绪日记表单数据类型
+interface DiaryForm {
+  diaryDate: string;
+  moodScore: number | null;
+  dominantEmotion: string;
+  emotionTriggers: string;
+  diaryContent: string;
+  sleepQuality: number | null;
+  stressLevel: number | null;
+}
+
 // 选择主要情绪
-const selectEmotion = (emotion) => {
+const selectEmotion = (emotion: string): void => {
   diaryForm.value.dominantEmotion = emotion
 }
+
 // 情绪日记表单数据
-const diaryForm = ref({
+const diaryForm = ref<DiaryForm>({
   diaryDate: dayjs().format('YYYY-MM-DD'),//记录日期
-  moodScore: null,//情绪评分（1-1null）
+  moodScore: null,//情绪评分（1-10）
   dominantEmotion: '',//重要情绪
   emotionTriggers: '',//情绪触发因素
   diaryContent: '',//今日感想
   sleepQuality: null,//睡眠质量
   stressLevel: null,//压力水平
 })
+
 // 重置表单
-const resetForm = () => {
+const resetForm = (): void => {
   Object.assign(diaryForm.value, {
     diaryDate: dayjs().format('YYYY-MM-DD'),//记录日期
-    moodScore: null,//情绪评分（1-1null）
+    moodScore: null,//情绪评分（1-10）
     dominantEmotion: '',//重要情绪
     emotionTriggers: '',//情绪触发因素
     diaryContent: '',//今日感想
@@ -147,16 +169,29 @@ const resetForm = () => {
     stressLevel: null,//压力水平
   })
 }
+
 // 提交表单
-const submitForm = async () => {
+const submitForm = async (): Promise<void> => {
   //简单校验
   if (!diaryForm.value.moodScore || !diaryForm.value.dominantEmotion || !diaryForm.value.emotionTriggers || !diaryForm.value.diaryContent || !diaryForm.value.sleepQuality || !diaryForm.value.stressLevel) {
     ElMessage.error('请填写完整信息')
     return
   }
+
+  // 准备提交数据
+  const submitData: CreateOrUpdateEmotionDiaryParams = {
+    diaryDate: diaryForm.value.diaryDate,
+    diaryContent: diaryForm.value.diaryContent,
+    moodScore: diaryForm.value.moodScore,
+    dominantEmotion: diaryForm.value.dominantEmotion,
+    emotionTriggers: diaryForm.value.emotionTriggers,
+    sleepQuality: diaryForm.value.sleepQuality,
+    stressLevel: diaryForm.value.stressLevel,
+  }
+
   // 提交表单
   // 调用后端接口提交数据
-  await createOrUpdateEmotionDiaryAPI(diaryForm.value)
+  await createOrUpdateEmotionDiaryAPI(submitData)
   ElMessage.success('提交成功')
   // 重置表单
   resetForm()

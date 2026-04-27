@@ -11,7 +11,7 @@
         </div>
       </div>
     </div>
-
+    <!-- 精品推荐 -->
     <div class="content">
       <div class="recommend-section">
         <div class="section-header">
@@ -31,7 +31,7 @@
           </div>
         </div>
       </div>
-
+      <!-- 文章列表 -->
       <div class="article-list">
         <Skeleton v-if="loading" type="article" :count="3" />
         <template v-else>
@@ -43,18 +43,24 @@
               <div class="article-meta">
                 <el-tag type="primary" plain size="small">{{ item.categoryName }}</el-tag>
                 <span class="article-date">
-                  <el-icon><List /></el-icon>
+                  <el-icon>
+                    <List />
+                  </el-icon>
                   {{ dayjs(item.updatedAt).format('YYYY-MM-DD') }}
                 </span>
               </div>
               <h3 class="article-title">{{ item.title }}</h3>
               <div class="article-footer">
                 <div class="author">
-                  <el-icon><Avatar /></el-icon>
+                  <el-icon>
+                    <Avatar />
+                  </el-icon>
                   {{ item.authorName }}
                 </div>
                 <div class="read-count">
-                  <el-icon><Platform /></el-icon>
+                  <el-icon>
+                    <Platform />
+                  </el-icon>
                   {{ item.readCount }} 阅读
                 </div>
               </div>
@@ -74,24 +80,26 @@
     </div>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
 import { dayjs } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getKnowledgeArticleListAPI } from '@/apis/frontend/konwledge'
+
 import Skeleton from '@/components/Skeleton.vue'
+import { getKnowledgeArticleListAPI } from '@/apis/frontend/knowledge'
+import type { KnowledgeArticle, KnowledgeArticleListParams } from '@/types/frontstage/knowledge'
 
 const bookUrl = new URL('@/assets/images/book.png', import.meta.url).href
 
 // 加载状态
-const loading = ref(true)
+const loading = ref<boolean>(true)
 const dogUrl = new URL('@/assets/dog.jpg', import.meta.url).href
 
 
 //左侧精品推荐
-const recommendList = ref([])
-const getRecommendList = async () => {
-  const params = {
+const recommendList = ref<KnowledgeArticle[]>([])
+const getRecommendList = async (): Promise<void> => {
+  const params: KnowledgeArticleListParams = {
     sortField: 'readCount',
     sortDirection: 'desc',
     currentPage: 1,
@@ -102,23 +110,32 @@ const getRecommendList = async () => {
 }
 
 //右侧文章列表
-const articleList = ref([])
+const articleList = ref<KnowledgeArticle[]>([])
+
+//分页类型
+interface Pagination {
+  currentPage: number;
+  size: number;
+  total: number;
+}
+
 //分页
-const pagination = ref({
+const pagination = ref<Pagination>({
   currentPage: 1,
   size: 5,
   total: 0
 })
+
 //获取文章图片
-const getImage = (url) => {
+const getImage = (url: string | undefined): string => {
   return url ? 'http://159.75.169.224:1235' + url : dogUrl
 }
 
 // 获取文章列表
-const getArticleList = async () => {
+const getArticleList = async (): Promise<void> => {
   loading.value = true
   try {
-    const params = {
+    const params: KnowledgeArticleListParams = {
       sortField: 'publishAt',
       sortDirection: 'desc',
       ...pagination.value
@@ -132,13 +149,14 @@ const getArticleList = async () => {
 }
 
 // 分页切换
-const handleCurrentChange = (page) => {
+const handleCurrentChange = (page: number): void => {
   pagination.value.currentPage = page
   getArticleList()
 }
+
 // 点击文章跳转详情页
 const router = useRouter()
-const ClickToArticleDetail = (id) => {
+const ClickToArticleDetail = (id: string): void => {
   router.push(`/knowledge/article/${id}`)
 }
 
@@ -388,7 +406,8 @@ onMounted(() => {
             align-items: center;
             justify-content: space-between;
 
-            .author, .read-count {
+            .author,
+            .read-count {
               font-size: 13px;
               color: #888;
               display: flex;

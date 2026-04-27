@@ -7,7 +7,7 @@ import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 // 引入路由
-import router from "./router";
+import router from "./router/index.js";
 // 引入element-plus图标
 import * as ElementPlusIconsVue from "@element-plus/icons-vue";
 //引入pinia

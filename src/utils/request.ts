@@ -16,6 +16,7 @@ request.interceptors.request.use(
     const adminStore = useAdminStore()
     const token = adminStore.token
     if (token) {
+      config.headers = config.headers || {}
       config.headers['token'] = token
     }
     return config

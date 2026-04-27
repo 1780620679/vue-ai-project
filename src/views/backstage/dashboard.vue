@@ -118,16 +118,17 @@
     </el-row>
   </div>
 </template>
-<script setup>
-import { getOverviewAPI } from "@/apis/dashboard"
+<script setup lang="ts">
+import { getOverviewAPI } from "@/apis/backend/dashboard"
 import { onMounted, ref } from "vue"
 
 // echarts----------------------------------------------------------------------------------
 import * as echarts from "echarts"
+import { DailyTrend, EmotionTrend, OverviewResponse, UserActivity } from "@/types/backstage/dashboard"
 // 图表实例(情绪趋势/咨询会话/用户活跃度)    用于接收实例
-let emotionChart = null
-let consultationChart = null
-let userActiveChart = null
+let emotionChart: any = null
+let consultationChart: any = null
+let userActiveChart: any = null
 //用于接收DOM
 const emotionChartRef = ref(null)
 const consultationChartRef = ref(null)
@@ -144,7 +145,7 @@ const initEmotionChart = () => {
   // 初始化创建echarts实例
   emotionChart = echarts.init(emotionChartRef.value)
   //获取情绪趋势数据
-  const TrendData = overviewData.value.emotionTrend
+  const TrendData: EmotionTrend[] = overviewData.value.emotionTrend
   //配置项
   const option = {
     // 图表标题
@@ -268,7 +269,7 @@ const initConsultationChart = () => {
   // 初始化创建echarts实例
   consultationChart = echarts.init(consultationChartRef.value)
   //获取咨询会话数据
-  const dailyTrend = overviewData.value.consultationStats.dailyTrend
+  const dailyTrend: DailyTrend[] = overviewData.value.consultationStats.dailyTrend
   //配置项
   const option = {
     title: {
@@ -387,7 +388,7 @@ const initUserActiveChart = () => {
   // 初始化创建echarts实例
   userActiveChart = echarts.init(userActiveChartRef.value)
   //获取用户活跃度数据
-  const activityData = overviewData.value.userActivity
+  const activityData: UserActivity[] = overviewData.value.userActivity
   //配置项
   const option = {
     title: {
@@ -546,10 +547,10 @@ const iconUrl4 = new URL("@/assets/images/smile.png", import.meta.url).href
 //loading状态
 const loading = ref(false)
 //界面数据
-const overviewData = ref({})
+const overviewData = ref<OverviewResponse>({} as OverviewResponse)
 onMounted(async () => {
   loading.value = true
-  const res = await getOverviewAPI()
+  const res: OverviewResponse = await getOverviewAPI()
   overviewData.value = res
   initChart()
   loading.value = false

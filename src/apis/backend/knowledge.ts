@@ -1,7 +1,8 @@
 import request from "@/utils/request"
+import type { CategoryTreeItem, KnowledgeArticlePageParams, KnowledgeArticlePageResponse, KnowledgeArticleDetail, KnowledgeArticleParams, UploadFileResponse } from "@/types/backstage/knowledge"
 
 // 获取分类树(知识文章分类下拉框可选的值)
-export const getCategoryTreeAPI = () => {
+export const getCategoryTreeAPI = (): Promise<CategoryTreeItem[]> => {
   return request({
     url: "/knowledge/category/tree",
     method: "get",
@@ -9,7 +10,7 @@ export const getCategoryTreeAPI = () => {
 }
 // 获取知识文章列表
 //get请求有参数时，需要在params中传递参数
-export const getKnowledgeArticlePageAPI = (params) => {
+export const getKnowledgeArticlePageAPI = (params: KnowledgeArticlePageParams): Promise<KnowledgeArticlePageResponse> => {
   return request({
     url: "/knowledge/article/page",
     method: "get",
@@ -17,7 +18,7 @@ export const getKnowledgeArticlePageAPI = (params) => {
   })
 }
 // 知识文章文件上传
-export const uploadFileAPI = (file, businessInfo) => {
+export const uploadFileAPI = (file: File, businessInfo: { businessId: string }): Promise<UploadFileResponse> => {
   //创建FormData对象，用于存储文件和业务信息
   const formData = new FormData()
   formData.append("file", file)
@@ -32,7 +33,7 @@ export const uploadFileAPI = (file, businessInfo) => {
   })
 }
 //获取知识文章详情/knowledge/article/{id}
-export const getKnowledgeArticleDetailAPI = (id) => {
+export const getKnowledgeArticleDetailAPI = (id: string): Promise<KnowledgeArticleDetail> => {
   return request({
     url: `/knowledge/article/${id}`,
     method: "get",
@@ -40,7 +41,7 @@ export const getKnowledgeArticleDetailAPI = (id) => {
 }
 //文章新增
 //data为文章数据，包含标题、内容、分类、摘要、标签等
-export const knowledgeArticleAPI = (data) => {
+export const knowledgeArticleAPI = (data: KnowledgeArticleParams): Promise<KnowledgeArticleDetail> => {
   return request({
     url: "/knowledge/article",
     method: "post",
@@ -49,7 +50,7 @@ export const knowledgeArticleAPI = (data) => {
 }
 //文章编辑/knowledge/article/{id}
 //data为文章数据，包含标题、内容、分类、摘要、标签等
-export const knowledgeArticleUpdateAPI = (id, data) => {
+export const knowledgeArticleUpdateAPI = (id: string, data: KnowledgeArticleParams): Promise<KnowledgeArticleDetail> => {
   return request({
     url: `/knowledge/article/${id}`,
     method: "put",
@@ -57,7 +58,7 @@ export const knowledgeArticleUpdateAPI = (id, data) => {
   })
 }
 // 发布/下线知识文章
-export const publishKnowledgeArticleAPI = (id, status) => {
+export const publishKnowledgeArticleAPI = (id: string, status: number): Promise<void> => {
   return request({
     url: `/knowledge/article/${id}/status`,
     method: "put",
@@ -67,7 +68,7 @@ export const publishKnowledgeArticleAPI = (id, status) => {
   })
 }
 // 删除知识文章
-export const deleteKnowledgeArticleAPI = (id) => {
+export const deleteKnowledgeArticleAPI = (id: string): Promise<void> => {
   return request({
     url: `/knowledge/article/${id}`,
     method: "delete",

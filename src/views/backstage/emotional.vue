@@ -106,7 +106,7 @@
               <h5>改善建议</h5>
               <div class="improvements-conntent">
                 <ul class="improvements-list">
-                  <li v-for="item in aiData.improvementsSuggestionss" :key="item">{{ item }}</li>
+                  <li v-for="item in aiData.improvementSuggestions" :key="item">{{ item }}</li>
                 </ul>
               </div>
             </div>
@@ -130,16 +130,17 @@
     </el-dialog>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
 
-import { getEmotionalPageAPI, deleteEmotionalAPI } from '@/apis/emotional';
+import { getEmotionalPageAPI, deleteEmotionalAPI } from '@/apis/backend/emotional';
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import PageHead from './components/PageHead.vue';
 import TableSearch from '@/components/TableSearch.vue';
+import { EmotionalPageParams, EmotionalDiary, AIEmotionAnalysis, } from '@/types/backstage/emotional';
 
 // 状态映射
-const getEmotionTagType = (emotion) => {
+const getEmotionTagType = (emotion: string) => {
   const emotionTypes = {
     '快乐': 'success',
     '平静': 'info',
@@ -148,9 +149,9 @@ const getEmotionTagType = (emotion) => {
     '悲伤': 'info',
     '焦虑': 'warning'
   }
-  return emotionTypes[emotion] || 'info'
+  return emotionTypes[emotion as keyof typeof emotionTypes] || 'info'
 }
-const getAiEmotionTagType = (emotion) => {
+const getAiEmotionTagType = (emotion: string) => {
   const emotionTagMap = {
     '快乐': 'success',
     '平静': 'success',
@@ -163,31 +164,31 @@ const getAiEmotionTagType = (emotion) => {
     '沮丧': 'info',
     '压力': 'warning'
   }
-  return emotionTagMap[emotion] || 'info'
+  return emotionTagMap[emotion as keyof typeof emotionTagMap] || 'info'
 }
-const getEmotionScoreColor = (score) => {
+const getEmotionScoreColor = (score: number) => {
   if (score >= 80) return '#f56c6c'
   if (score >= 60) return '#e6a23c'
   if (score >= 40) return '#909399'
   return '#67c23a'
 }
-const getRiskLevelTagType = (riskLevel) => {
+const getRiskLevelTagType = (riskLevel: number) => {
   const riskTagMap = {
     0: 'success',
     1: 'info',
     2: 'warning',
     3: 'danger'
   }
-  return riskTagMap[riskLevel] || 'info'
+  return riskTagMap[riskLevel as keyof typeof riskTagMap] || 'info'
 }
-const getRiskLevelText = (riskLevel) => {
+const getRiskLevelText = (riskLevel: number) => {
   const riskTextMap = {
     0: '正常',
     1: '关注',
     2: '预警',
     3: '危机'
   }
-  return riskTextMap[riskLevel] || '未知风险等级'
+  return riskTextMap[riskLevel as keyof typeof riskTextMap] || '未知风险等级'
 }
 
 // 搜索表单配置
@@ -220,22 +221,22 @@ const formItem = [
   },
 ]
 //分页配置
-const pagination = reactive({
+const pagination = reactive<EmotionalPageParams>({
   currentPage: 1,
   size: 10,
   total: 0,
 })
 // 表格数据
-const tableData = ref([])
+const tableData = ref<EmotionalDiary[]>([])
 
 
 // 分页切换方法
-const handleCurrentChange = (page) => {
+const handleCurrentChange = (page: number) => {
   pagination.currentPage = page
   handleSearch({})
 }
 // 搜索方法(子传父回调来的数据)
-const handleSearch = async (formData) => {
+const handleSearch = async (formData: Record<string, any>) => {
   // 合并分页配置和搜索表单数据
   const params = {
     ...pagination,
@@ -247,28 +248,47 @@ const handleSearch = async (formData) => {
 }
 // 处理详情点击事件
 const showDetailDialog = ref(false)
-const aiData = ref(null)
-const sessionDetail = ref(null)
-const handleEdit = (row) => {
+const aiData = ref<AIEmotionAnalysis>({
+  primaryEmotion: '',
+  emotionScore: 0,
+  isNegative: false,
+  riskLevel: 0,
+  keywords: [],
+  suggestion: '',
+  riskDescription: '',
+  improvementSuggestions: []
+})
+const sessionDetail = ref<EmotionalDiary | null>(null)
+const handleEdit = (row: EmotionalDiary) => {
   sessionDetail.value = row
   /// 处理AI情绪分析结果决定是否显示
   if (row.aiEmotionAnalysis) {
     aiData.value = JSON.parse(row.aiEmotionAnalysis)
   }
   else {
-    aiData.value = {}
+    aiData.value = {
+      primaryEmotion: '',
+      emotionScore: 0,
+      isNegative: false,
+      riskLevel: 0,
+      keywords: [],
+      suggestion: '',
+      riskDescription: '',
+      improvementSuggestions: []
+    }
   }
   showDetailDialog.value = true
 }
 // 处理删除点击事件
-const handleDelete = (row) => {
+const handleDelete = (row: EmotionalDiary) => {
+  // @ts-ignore
   ElMessageBox.confirm('确认删除该情绪日志吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'danger'
   }).then(async () => {
     // 调用删除接口
-    await deleteEmotionalAPI(row.id)
+    await deleteEmotionalAPI(row.id.toString())
     ElMessage.success('删除成功');
     // 刷新表格数据
     handleSearch({})

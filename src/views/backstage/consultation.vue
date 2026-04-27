@@ -68,22 +68,23 @@
     </el-dialog>
   </div>
 </template>
-<script setup>
-import { getConsultationDataAPI, getSessionMessagesAPI } from '@/apis/consultation';
+<script setup lang="ts">
+import { getConsultationDataAPI, getSessionMessagesAPI } from '@/apis/backend/consultation';
 import { onMounted, ref } from 'vue';
 import PageHead from './components/PageHead.vue';
+import { ConsultationDataParams, ConsultationDataResponse, Records, SessionMessagesResponse } from '@/types/backstage/consultation';
 
 // 表格数据
-const tableData = ref([])
+const tableData = ref<Records[]>([])
 //分页配置
-const pagination = ref({
+const pagination = ref<ConsultationDataParams>({
   total: 0,
   size: 10,
   currentPage: 1,
 })
 // 获取咨询记录数据
 const handleSearch = async () => {
-  const res = await getConsultationDataAPI(pagination.value)
+  const res: ConsultationDataResponse = await getConsultationDataAPI(pagination.value)
   const { records, total } = res
   tableData.value = records
   pagination.value.total = total
@@ -91,21 +92,21 @@ const handleSearch = async () => {
 
 // 处理会话详情点击事件
 const showDetailDialog = ref(false)
-const sessionDetail = ref({})
+const sessionDetail = ref<Records>({} as Records)
 // 加载状态
 const loading = ref(false)
 
-const handleSessionDetail = async (row) => {
+const handleSessionDetail = async (row: Records) => {
   loading.value = true
   sessionDetail.value = row
   showDetailDialog.value = true
   // 获取会话消息详情列表
-  const messages = await getSessionMessagesAPI(row.id)
-  sessionDetail.value.messages = messages
+  const messages: SessionMessagesResponse = await getSessionMessagesAPI(row.id)
+  sessionDetail.value.messages = messages.messages || []
   loading.value = false
 }
 // 分页切换方法
-const handleCurrentChange = (page) => {
+const handleCurrentChange = (page: number) => {
   pagination.value.currentPage = page
   // 分页切换时，需要重新获取数据
   handleSearch()

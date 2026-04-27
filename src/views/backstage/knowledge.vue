@@ -2,7 +2,7 @@
   <div>
     <PageHead title="知识文章">
       <template #buttons>
-        <el-button type="primary" @click="handleEdit({})">新增</el-button>
+        <el-button type="primary" @click="handleEdit({} as KnowledgeArticle)">新增</el-button>
       </template>
     </PageHead>
     <TableSearch :formItem="formItem" @search="handleSearch"></TableSearch>
@@ -34,19 +34,21 @@
       @success="handleSuccess"></ArticleDialog>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
 import {
   deleteKnowledgeArticleAPI,
   getCategoryTreeAPI,
   getKnowledgeArticleDetailAPI,
   getKnowledgeArticlePageAPI,
   publishKnowledgeArticleAPI,
-} from "@/apis/knowledge"
+} from "@/apis/backend/knowledge"
 import { onMounted, ref, reactive } from "vue"
 import { ElMessage, ElMessageBox } from "element-plus"
 import ArticleDialog from "@/components/ArticleDialog.vue"
 import TableSearch from "@/components/TableSearch.vue"
 import PageHead from "./components/PageHead.vue"
+import { KnowledgeArticle, KnowledgeArticlePageParams, CategoryTreeItem, CategoryOption, KnowledgeSearchForm, KnowledgeArticleDetail } from "@/types/backstage/knowledge"
+
 // 引入加载状态
 const loading = ref(false)
 // 引入弹窗状态
@@ -87,21 +89,21 @@ const formItem = [
   },
 ]
 // 分页配置
-const pagination = reactive({
+const pagination = reactive<KnowledgeArticlePageParams>({
   currentPage: 1,
   size: 5,
   total: 0,
 })
 // 分页切换方法
-const handleCurrentChange = (page) => {
+const handleCurrentChange = (page: number) => {
   pagination.currentPage = page
   handleSearch({})
 }
 // 搜索方法(子传父回调来的数据)
-const handleSearch = async (formData) => {
+const handleSearch = async (formData: KnowledgeSearchForm) => {
   loading.value = true
   // 合并分页配置和搜索表单数据
-  const params = {
+  const params: KnowledgeArticlePageParams = {
     ...pagination,
     ...formData,
   }// 获取知识文章列表
@@ -111,15 +113,15 @@ const handleSearch = async (formData) => {
   loading.value = false
 }
 // 表格数据
-const tableData = ref([])
+const tableData = ref<KnowledgeArticle[]>([])
 //分类映射
-const categoryMap = reactive({})
+const categoryMap = reactive<Record<string, string>>({})
 //分类列表
-const categoryList = ref([])
+const categoryList = ref<CategoryOption[]>([])
 // 引入知识分类接口(获取知识分类树下拉框数据)
 onMounted(async () => {
   const data = await getCategoryTreeAPI()
-  categoryList.value = data.map((item) => {
+  categoryList.value = data.map((item: CategoryTreeItem) => {
     //处理分类映射(将分类id映射到分类名称)  等号左边id为key,右边item.categoryName为value，可以在表格中根据id作为key找到对应显示分类名称
     categoryMap[item.id] = item.categoryName
     return {
@@ -127,12 +129,16 @@ onMounted(async () => {
       value: item.id,
     }
   })
-  formItem[1].options = categoryList.value
+  // 处理分类列表(将分类id转换为数字类型，不然报错)
+  formItem[1].options = categoryList.value.map((item: CategoryOption) => ({
+    label: item.label,
+    value: Number(item.value),
+  }))
   handleSearch({})
 })
-const currentArticle = ref(null)
+const currentArticle = ref<KnowledgeArticleDetail | null>(null)
 // 新增/编辑
-const handleEdit = async (row) => {
+const handleEdit = async (row: KnowledgeArticle) => {
   //判断是否是新增
   if (!row.id) {
     //新增
@@ -147,7 +153,8 @@ const handleEdit = async (row) => {
   }
 }
 // 发布
-const handlePublish = async (row) => {
+const handlePublish = async (row: KnowledgeArticle) => {
+  // @ts-ignore
   ElMessageBox.confirm("确认发布吗？", "提示", {
     confirmButtonText: "确定",
     cancelButtonText: "取消",
@@ -162,7 +169,8 @@ const handlePublish = async (row) => {
   })
 }
 // 下线
-const handleOffline = async (row) => {
+const handleOffline = async (row: KnowledgeArticle) => {
+  // @ts-ignore
   ElMessageBox.confirm("确认下线吗？", "提示", {
     confirmButtonText: "确定",
     cancelButtonText: "取消",
@@ -177,7 +185,8 @@ const handleOffline = async (row) => {
   })
 }
 // 删除
-const handleDelete = async (row) => {
+const handleDelete = async (row: KnowledgeArticle) => {
+  // @ts-ignore
   ElMessageBox.confirm("确认删除吗？", "提示", {
     confirmButtonText: "确定",
     cancelButtonText: "取消",

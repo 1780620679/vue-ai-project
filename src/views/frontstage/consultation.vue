@@ -197,7 +197,7 @@
     </div>
   </div>
 </template>
-<script setup>
+<script setup lang="ts">
 import { onMounted, ref, onUnmounted } from 'vue';
 import { deleteSessionAPI, getSessionDetailAPI, getSessionListAPI, getSessionEmotionAPI, startSessionAPI, } from '@/apis/frontend/consultation'
 import { ElMessage } from 'element-plus';
@@ -205,6 +205,7 @@ import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { useAdminStore } from '@/stores/admin';
 import * as echarts from 'echarts';
+import type { SessionMessage, SessionInfo, SessionEmotionResponse, StartSessionParams } from '@/types/frontstage/consultation';
 
 // 图标
 const logoUrl = new URL('@/assets/images/心屿.png', import.meta.url).href
@@ -213,20 +214,28 @@ const userUrl = new URL('@/assets/images/users.png', import.meta.url).href
 
 
 // 聊天内容
-const messages = ref([])
+const messages = ref<SessionMessage[]>([])
 // 用户输入的消息
-const userMessage = ref('')
+const userMessage = ref<string>('')
 // 是否助手正在回复(用于禁用输入框)
-const isAiTyping = ref(false)
+const isAiTyping = ref<boolean>(false)
 
 // 情绪趋势图表
-const chartRef = ref(null)
-let chart = null
+const chartRef = ref<HTMLElement | null>(null)
+let chart: echarts.ECharts | null = null
+
+// 情绪历史数据类型
+interface EmotionHistoryItem {
+  time: string;
+  score: number;
+  emotion: string;
+}
+
 // 情绪分数历史记录
-const emotionHistory = ref([])
+const emotionHistory = ref<EmotionHistoryItem[]>([])
 
 //情绪花园
-const currentEmotion = ref({
+const currentEmotion = ref<SessionEmotionResponse>({
   primaryEmotion: '困惑',
   emotionScore: 50,
   isNegative: false,
@@ -235,7 +244,7 @@ const currentEmotion = ref({
   improvementSuggestions: [],
 })
 //三个小点映射
-const getDotActive = (score) => {
+const getDotActive = (score: number): number => {
   if (score >= 61) {
     return 3
   }
@@ -245,7 +254,7 @@ const getDotActive = (score) => {
   return 1
 }
 // 风险等级映射
-const getRiskLevel = (level) => {
+const getRiskLevel = (level: number): string => {
   switch (level) {
     case 0:
       return '正常'
@@ -260,18 +269,18 @@ const getRiskLevel = (level) => {
   }
 }
 //获取情绪分析结果
-const getEmotionAnalysis = async (sessionId) => {
+const getEmotionAnalysis = async (sessionId: string | number): Promise<void> => {
   //确保sessionId格式正确 sessionId_123
   const id = sessionId.toString().startsWith('session_') ? sessionId : 'session_' + sessionId
   //获取情绪分析结果
-  const res = await getSessionEmotionAPI(id)
+  const res = await getSessionEmotionAPI(id as string)
   // console.log(res, '情绪分析结果');
   //更新情绪花园数据
   currentEmotion.value = res
 
   // 将情绪数据添加到历史记录
   const now = new Date()
-  const emotionData = {
+  const emotionData: EmotionHistoryItem = {
     time: `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`,
     score: res.emotionScore,
     emotion: res.primaryEmotion
@@ -291,7 +300,7 @@ const getEmotionAnalysis = async (sessionId) => {
 
 
 // 初始化图表
-const initChart = () => {
+const initChart = (): void => {
   if (chartRef.value) {
     // 销毁旧图表实例
     if (chart) {
@@ -307,7 +316,7 @@ const initChart = () => {
 }
 
 // 更新图表
-const updateChart = () => {
+const updateChart = (): void => {
   if (!chart) return
 
   // 准备图表数据
@@ -318,7 +327,7 @@ const updateChart = () => {
   const option = {
     tooltip: {
       trigger: 'axis',
-      formatter: function (params) {
+      formatter: function (params: any) {
         const data = params[0]
         const index = data.dataIndex
         const emotion = emotionHistory.value[index].emotion
@@ -373,9 +382,17 @@ const updateChart = () => {
 }
 
 // 会话历史列表
-const sessionList = ref([])
+const sessionList = ref<SessionInfo[]>([])
+
+// 会话对象类型
+interface Session {
+  sessionId: string;
+  status: 'TEMP' | 'ACTIVE' | string;
+  sessionTitle: string;
+}
+
 // 会话历史列表记录
-const getSessionList = async () => {
+const getSessionList = async (): Promise<void> => {
   const res = await getSessionListAPI({
     pageNum: 1,
     pageSize: 10,
@@ -385,7 +402,7 @@ const getSessionList = async () => {
 }
 
 // 点击会话历史项 ,切换到该会话
-const handleSessionClick = async (session) => {
+const handleSessionClick = async (session: SessionInfo): Promise<void> => {
   //获取会话记录详情
   const res = await getSessionDetailAPI(session.id)
   // console.log(res, '会话记录详情');
@@ -396,7 +413,7 @@ const handleSessionClick = async (session) => {
   getEmotionAnalysis(session.id)
 
   //更新当前会话对象currentSession
-  const sessionData = {
+  const sessionData: Session = {
     sessionId: "session_" + session.id,//会话ID
     status: 'ACTIVE',//会话状态
     sessionTitle: session.sessionTitle,//会话标题
@@ -405,24 +422,24 @@ const handleSessionClick = async (session) => {
 
 }
 // 删除会话
-const handelDeleteSession = async (sessionId) => {
+const handelDeleteSession = async (sessionId: string): Promise<void> => {
   await deleteSessionAPI(sessionId)
   ElMessage.success('删除成功')
   //删除成功后，刷新会话列表
   getSessionList()
 }
 // 格式化用户消息(将换行符替换为<br>标签)
-const formatUserMessage = (message) => {
+const formatUserMessage = (message: string): string => {
   return message.replace(/\n/g, '<br>')
 }
 
 
 //定义当前会话对象（可能是临时会话，也可能是历史会话）
-const currentSession = ref(null)
+const currentSession = ref<Session | null>(null)
 //创建临时会话消息(只是在先创建一个临时会话对象，不调用后端接口创建会话)
-const createNewConversation = () => {
+const createNewConversation = (): void => {
   //创建一个新的会话对象
-  const newSession = {
+  const newSession: Session = {
     sessionId: `temp_${Date.now()}`,//会话ID
     status: 'TEMP',//会话状态
     sessionTitle: '新会话',//会话标题
@@ -443,7 +460,7 @@ const createNewConversation = () => {
 }
 
 // 点击发送消息
-const sendMessage = () => {
+const sendMessage = (): void => {
   if (!userMessage.value.trim()) return
 
   if (isAiTyping.value) {
@@ -455,12 +472,13 @@ const sendMessage = () => {
   userMessage.value = ''
 
   //如果没有会话或者是临时会话，创建新会话（这里才指调用后端接口创建会话）
-  if (currentSession.value.status === 'TEMP') {
+  if (currentSession.value && currentSession.value.status === 'TEMP') {
     startNewSession(usermessage)
-  } else {
+  } else if (currentSession.value) {
     //历史会话直接继续对话
     messages.value.push({
-      id: Date.now(),
+      id: Date.now().toString(),
+      sessionId: currentSession.value.sessionId,
       content: usermessage,
       senderType: 1,
       createdAt: new Date().toISOString(),//创建时间
@@ -470,15 +488,15 @@ const sendMessage = () => {
 
 }
 // 发送消息到后端创建一个新会话
-const startNewSession = async (usermessage) => {
+const startNewSession = async (usermessage: string): Promise<void> => {
   //构建需要发送的参数
-  const params = {
+  const params: StartSessionParams = {
     initialMessage: usermessage,//消息
   }
   //标题(判断是不是临时会话，即新会话直接设置，历史会话则需要获取到标题)
-  if (currentSession.value.sessionTitle === '新会话') {
+  if (currentSession.value && currentSession.value.sessionTitle === '新会话') {
     params.sessionTitle = `AI助手-${new Date().toLocaleString()}`
-  } else {
+  } else if (currentSession.value) {
     //历史会话直接使用当前会话标题
     params.sessionTitle = currentSession.value.sessionTitle
   }
@@ -486,10 +504,10 @@ const startNewSession = async (usermessage) => {
   const res = await startSessionAPI(params)
   // console.log(res);
   //把后端返回的数据转为前端会话的格式
-  const sessionData = {
+  const sessionData: Session = {
     sessionId: res.sessionId,//会话ID
     status: res.status,//会话状态
-    sessionTitle: params.sessionTitle,//会话标题
+    sessionTitle: params.sessionTitle || '新会话',//会话标题
   }
   //如果是临时会话，更新数据
   if (currentSession.value && currentSession.value.status === 'TEMP') {
@@ -503,16 +521,19 @@ const startNewSession = async (usermessage) => {
   getSessionList()
   //添加初始用户消息
   messages.value.push({
-    id: Date.now(),
+    id: Date.now().toString(),
+    sessionId: currentSession.value.sessionId,
     content: usermessage,
     senderType: 1,
     createdAt: new Date().toISOString(),//创建时间
   })
   //开启流式对话，监听后端返回的消息
-  startAIResponse(currentSession.value.sessionId, usermessage)
+  if (currentSession.value) {
+    startAIResponse(currentSession.value.sessionId, usermessage)
+  }
 }
 //开启流式对话
-const startAIResponse = (sessionId, userMessage) => {
+const startAIResponse = (sessionId: string, userMessage: string): void => {
   //防止重复发送
   if (isAiTyping.value) {
     ElMessage.error('正在回复中，请稍后再发送')
@@ -521,9 +542,10 @@ const startAIResponse = (sessionId, userMessage) => {
   //设置正在回复中
   isAiTyping.value = true
   //创建一个ai默认消息,也作为占位符，等ai回复完成后，再替换为实际的回复内容
-  const aiMessage = {
+  const aiMessage: SessionMessage = {
     id: `ai_${Date.now()}_${Math.random().toString(36).substring(2)}`,//定义一个唯一的id
     senderType: 2,//AI助手消息
+    sessionId: currentSession.value!.sessionId,//会话ID
     content: '',//消息内容
     createdAt: new Date().toISOString(),//创建时间
   }
@@ -545,13 +567,14 @@ const startAIResponse = (sessionId, userMessage) => {
     //添加取消信号
     signal: ctrl.signal,
     //监听连接成功事件，判断类型是不是想要的流式类型
-    onopen: (res) => {
+    //@ts-ignore
+    onopen: (res: any) => {
       if (res.headers.get('Content-Type') !== 'text/event-stream') {
         ElMessage.error('连接失败，返回的不是流式数据类型')
       }
     },
     //正常返回的消息就会触发onmessage事件
-    onmessage: (event) => {
+    onmessage: (event: any) => {
       //获取返回的消息
       const raw = event.data.trim()
       if (!raw) return
@@ -565,7 +588,9 @@ const startAIResponse = (sessionId, userMessage) => {
         isAiTyping.value = false
         ctrl.abort()
         //获取情绪分析结果
-        getEmotionAnalysis(currentSession.value.sessionId)
+        if (currentSession.value) {
+          getEmotionAnalysis(currentSession.value.sessionId)
+        }
         return
       }
       //将返回的消息解析为json格式
@@ -579,26 +604,28 @@ const startAIResponse = (sessionId, userMessage) => {
       }
     },
     //监听错误事件
-    onerror: (error) => {
+    onerror: (error: any) => {
       handleError(error || 'ai回复失败')
     },
     //监听关闭事件
     onclose: () => {
       //ai回复完成，开始情绪分析结果
-      getEmotionAnalysis(currentSession.value.sessionId)
+      if (currentSession.value) {
+        getEmotionAnalysis(currentSession.value.sessionId)
+      }
     },
 
   })
 }
 //错误处理
-const handleError = (error) => {
+const handleError = (error: string | Error): void => {
   //当前会话的AI消息
   const aiMessage = messages.value[messages.value.length - 1]
   if (aiMessage) {
     aiMessage.content = 'ai回复失败，请稍后再重试'
   }
   isAiTyping.value = false
-  ElMessage.error(error)
+  ElMessage.error(error instanceof Error ? error.message : error)
 }
 
 onMounted(() => {
